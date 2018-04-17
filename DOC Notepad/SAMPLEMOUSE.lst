@@ -1,0 +1,350 @@
+Microsoft (R) Macro Assembler Version 6.15.8803		    05/10/12 15:34:13
+SAMPLEMOUSE						     Page 1 - 1
+
+
+				TITLE SAMPLEMOUSE
+
+				INCLUDE IRVINE16.INC
+			      C .NOLIST
+			      C .LIST
+			      C 
+
+ 0000				.DATA
+ = 001B				ESCKEY = 1Bh
+ 0000 50 52 45 53 53 20		GREETINGMSG BYTE "PRESS ESC TO QUITE", 0DH, 0AH, 0
+       45 53 43 20 54 4F
+       20 51 55 49 54 45
+       0D 0A 00
+ 0015 4C 45 46 54 20 42		STATUSLINE 	BYTE "LEFT BUTTON: "
+       55 54 54 4F 4E 3A
+       20
+ 0022  4D 4F 55 53 45 20				BYTE "MOUSE POSITION: ",0
+       50 4F 53 49 54 49
+       4F 4E 3A 20 00
+ 0033 09 09 09 09 20 20		BLANKS		BYTE "				   ",0
+       20 00
+ 003B 0000			XCOORDINATE	WORD 0			;CURRENT X
+ 003D 0000			YCOORDINATE	WORD 0			;CURRENT Y
+ 003F 0000			XCLICK		WORD 0			;X-POS OF LAST BUTTON PRESS
+ 0041 0000			YCLICK		WORD 0			;Y-POS OF LAST BUTTON PRESS
+
+ 0000				.CODE
+ 0000				MAIN PROC
+ 0000  B8 ---- R					MOV				AX, @DATA
+ 0003  8E D8						MOV				DS, AX
+ 0005  E8 0000 E					CALL			CLRSCR
+							;HIDE THE TEXT CURSOR AND DISPLAY MOUSE.
+ 0008  E8 0058						CALL			HIDECURSOR
+ 000B  BA 0000 R					MOV				DX, OFFSET GREETINGMSG
+ 000E  E8 0000 E					CALL			WRITESTRING
+ 0011  E8 006F						CALL			SHOWMOUSEPOINTER
+							
+							;DISPLAY A STATUS LINE ON LINE 24.
+ 0014  B6 22						MOV				DH, 34
+ 0016  B2 00						MOV 			DL, 0
+ 0018  E8 0000 E					CALL			GOTOXY
+ 001B  BA 0015 R					MOV				DX, OFFSET STATUSLINE
+ 001E  E8 0000 E					CALL			WRITESTRING
+							
+							;LOOP: SHOW MOUSE COORDINATE, CHECK FOR LEFT MOUSE
+							;BUTTON CLICK, OR FOR A KEYPRESS(ESC KEY).
+							
+ 0021  B2 46									MOV			DL, 46H
+ 0023  B6 02									MOV			DH, 02H
+ 0025  E8 0000 E								CALL		GOTOXY
+ 0028  B4 09							MOV					AH, 09h
+ 002A  B0 58							MOV					AL, 'X'
+ 002C  B7 00							MOV					BH, 0
+ 002E  B3 17							MOV					BL, 017H
+ 0030  B9 0001							MOV					CX, 1
+ 0033  CD 10							INT					10h
+							
+ 0035							L1:
+							; CALL			SETMOUSEPOSITION
+ 0035  E8 008E						CALL			SHOWMOUSEPOSITION
+ 0038  E8 0050						CALL			LEFTBUTTONCLICK		;CHECK FOR BUTTON CLICK
+ 003B  B4 11						MOV				AH, 11H				; KEY PRESSED ALREDY
+ 003D  CD 16						INT				16H
+							
+ 003F  74 08						JZ 				L2					; NO CONTINUE THE LOOP
+ 0041  B4 10						MOV				AH, 10H				; REMOVE KEY FROM BUFFER
+ 0043  CD 16						INT				16H
+ 0045  3C 1B						CMP				AL, ESCKEY			;YES. IS IT THE ESC KEY PRESSED?
+ 0047  74 02						JE				QUIT
+ 0049							L2:
+ 0049  EB EA						JMP				L1
+							
+							;HIDE THE MOUSE, RESTORE THE NEXT CURSOR, CLEAR
+							;THE SCREEN, AND DISPLAY "PRESS ANY KEY TO CONTINUE"
+							
+ 004B							QUIT:
+ 004B  E8 002D						CALL			HIDEMOUSEPOINTER
+ 004E  E8 001E						CALL			SHOWCURSOR
+ 0051  E8 0000 E					CALL			CLRSCR
+ 0054  E8 0000 E					CALL			WAITMSG
+							EXIT
+ 005B				MAIN		ENDP
+
+ 005B				GETMOUSEPOSITION PROC
+							
+ 005B  50						PUSH			AX
+ 005C  B8 0003						MOV				AX, 3		;(1 = RIGHT BUTTON DOWN, 2 = CENTER, 0= LEFT BUTTON)
+ 005F  CD 33						INT				33H				;CX = X-CORDINATE
+ 0061  58						POP				AX				;DX = Y-CORDINATE
+ 0062  C3						RET
+ 0063				GETMOUSEPOSITION ENDP
+ 0063				HIDECURSOR	PROC
+							
+ 0063  B4 03						MOV				AH, 3		;HIDE CURSOR
+ 0065  CD 10						INT				10H
+ 0067  80 CD 30						OR				CH, 30H		;SET UPPER ROW TO ILLEGAL VALUE
+ 006A  B4 01						MOV				AH, 1		; SET CURSOR SIZE
+ 006C  CD 10						INT				10H
+ 006E  C3						RET
+ 006F				HIDECURSOR	ENDP
+
+ 006F				SHOWCURSOR	PROC
+ 006F  B4 03						MOV				AH, 3		;GET CURSOR SIZE
+ 0071  CD 10						INT				10H
+ 0073  B4 01						MOV				AH, 1		;SET CURSOR SIZE
+ 0075  B9 0607						MOV				CX, 0607H	;DEFULT SIZE
+ 0078  CD 10						INT				10H
+ 007A  C3						RET
+ 007B				SHOWCURSOR	ENDP
+
+ 007B				HIDEMOUSEPOINTER PROC
+ 007B  50						PUSH			AX
+ 007C  B8 0002						MOV				AX, 2
+ 007F  CD 33						INT				33H
+ 0081  58						POP				AX
+ 0082  C3						RET
+ 0083				HIDEMOUSEPOINTER ENDP
+
+ 0083				SHOWMOUSEPOINTER PROC
+ 0083  50						PUSH			AX
+ 0084  B8 0001						MOV				AX, 1
+ 0087  CD 33						INT				33H
+ 0089  58						POP				AX
+ 008A  C3						RET
+ 008B				SHOWMOUSEPOINTER ENDP
+
+ 008B				LEFTBUTTONCLICK PROC
+ 008B  60						PUSHA
+ 008C  B4 00						MOV				AH, 0		;GET MOUSE STATUS
+ 008E  B0 05						MOV				AL, 5		;BUTTON PRESS INFORMATION
+ 0090  BB 0000						MOV				BX, 0		;SPECIFY THE LEFT BUTTON
+ 0093  CD 33						INT				33H
+							
+							;EXIT PROC IF THE COORDINATE HAVE NOT CHANGED.
+ 0095  3B 0E 003F R					CMP				CX, XCLICK
+ 0099  75 06						JNE				LBC1
+ 009B  3B 16 0041 R					CMP				DX, YCLICK
+ 009F  74 23						JE				LBC_EXIT
+							
+ 00A1							LBC1:
+							; exit
+							; SAVE THE MOUSE COORDINATES.
+ 00A1  89 0E 003F R					MOV				XCLICK, CX
+ 00A5  89 16 0041 R					MOV				YCLICK, DX
+							
+							; POSITION THE CURSOR, CLEAR THE OLD NUMBERS.
+ 00A9  B6 18						MOV				DH, 24		;SCREEN ROW
+ 00AB  B2 0F						MOV				DL, 15		;SCREEN COLUMN
+ 00AD  E8 0000 E					CALL			GOTOXY
+							; PUSH			DX
+							; MOV				DX, OFFSET BLANKS
+							; CALL			WRITESTRING
+							; POP				DX
+							
+							; SHOW THE MOUSE CLICK COORDINATE
+ 00B0  E8 0000 E					CALL			GOTOXY
+ 00B3  A1 003B R					MOV				AX, XCOORDINATE
+ 00B6  E8 0000 E					CALL			WRITEDEC
+ 00B9  B2 14						MOV				DL, 20
+ 00BB  E8 0000 E					CALL			GOTOXY
+ 00BE  A1 003D R					MOV				AX, YCOORDINATE
+ 00C1  E8 0000 E					CALL			WRITEDEC
+							
+ 00C4							LBC_EXIT:
+ 00C4  61						POPA
+ 00C5  C3						RET
+ 00C6				LEFTBUTTONCLICK ENDP
+ 00C6				SHOWMOUSEPOSITION PROC
+ 00C6  60						PUSHA
+ 00C7  E8 FF91						CALL			GETMOUSEPOSITION
+ 00CA  3B 0E 003B R					CMP				CX, XCOORDINATE
+ 00CE  75 06						JNE				SMP1
+ 00D0  3B 16 003D R					CMP				DX, YCOORDINATE
+ 00D4  74 23						JE				SMP_EXIT
+							
+ 00D6							SMP1:
+ 00D6  89 0E 003B R					MOV				XCOORDINATE, CX
+ 00DA  89 16 003D R					MOV				YCOORDINATE, DX
+							
+ 00DE  B6 18						MOV				DH, 24
+ 00E0  B2 3C						MOV				DL, 60
+ 00E2  E8 0000 E					CALL			GOTOXY
+							; PUSH			DX
+							; MOV				DX, OFFSET BLANKS
+							; CALL			WRITESTRING
+							; POP				DX
+							
+ 00E5  E8 0000 E					CALL			GOTOXY
+ 00E8  A1 003B R					MOV				AX, XCOORDINATE
+ 00EB  E8 0000 E					CALL			WRITEDEC
+ 00EE  B2 41						MOV				DL, 65
+ 00F0  E8 0000 E					CALL			GOTOXY
+ 00F3  A1 003D R					MOV				AX, YCOORDINATE
+ 00F6  E8 0000 E					CALL			WRITEDEC
+							
+ 00F9							SMP_EXIT:
+ 00F9  61						POPA
+ 00FA  C3			RET
+ 00FB				SHOWMOUSEPOSITION ENDP
+
+ 00FB				SETMOUSEPOSITION PROC
+ 00FB  B8 0004						MOV				AX, 4
+ 00FE  CD 33						INT				33H
+ 0100  C3						RET
+ 0101				SETMOUSEPOSITION ENDP
+
+							END MAIN
+Microsoft (R) Macro Assembler Version 6.15.8803		    05/10/12 15:34:13
+SAMPLEMOUSE						     Symbols 2 - 1
+
+
+
+
+Macros:
+
+                N a m e                 Type
+
+startup  . . . . . . . . . . . .	Proc
+
+
+Structures and Unions:
+
+                N a m e                  Size
+                                         Offset      Type
+
+ExtGetDskFreSpcStruc . . . . . .	 002C
+  StructSize . . . . . . . . . .	 0000	     Word
+  Level  . . . . . . . . . . . .	 0002	     Word
+  SectorsPerCluster  . . . . . .	 0004	     DWord
+  BytesPerSector . . . . . . . .	 0008	     DWord
+  AvailableClusters  . . . . . .	 000C	     DWord
+  TotalClusters  . . . . . . . .	 0010	     DWord
+  AvailablePhysSectors . . . . .	 0014	     DWord
+  TotalPhysSectors . . . . . . .	 0018	     DWord
+  AvailableAllocationUnits . . .	 001C	     DWord
+  TotalAllocationUnits . . . . .	 0020	     DWord
+  Rsvd . . . . . . . . . . . . .	 0024	     DWord
+TimeRecord . . . . . . . . . . .	 0004
+  hours  . . . . . . . . . . . .	 0000	     Byte
+  minutes  . . . . . . . . . . .	 0001	     Byte
+  seconds  . . . . . . . . . . .	 0002	     Byte
+  hhss . . . . . . . . . . . . .	 0003	     Byte
+
+
+Segments and Groups:
+
+                N a m e                 Size     Length   Align   Combine Class
+
+DGROUP . . . . . . . . . . . . .	GROUP
+_DATA  . . . . . . . . . . . . .	16 Bit	 0043	  Word	  Public  'DATA'	
+STACK  . . . . . . . . . . . . .	16 Bit	 1000	  Para	  Stack	  'STACK'	 
+_TEXT  . . . . . . . . . . . . .	16 Bit	 0101	  Word	  Public  'CODE'	
+
+
+Procedures,  parameters and locals:
+
+                N a m e                 Type     Value    Attr
+
+ClrScr . . . . . . . . . . . . .	P Near	 0000	  Length= 0000 External STDCALL
+Crlf . . . . . . . . . . . . . .	P Near	 0000	  Length= 0000 External STDCALL
+Delay  . . . . . . . . . . . . .	P Near	 0000	  Length= 0000 External STDCALL
+DumpMem  . . . . . . . . . . . .	P Near	 0000	  Length= 0000 External STDCALL
+DumpRegs . . . . . . . . . . . .	P Near	 0000	  Length= 0000 External STDCALL
+GETMOUSEPOSITION . . . . . . . .	P Near	 005B	  _TEXT	Length= 0008 Public STDCALL
+Get_Commandtail  . . . . . . . .	P Near	 0000	  Length= 0000 External STDCALL
+Get_Time . . . . . . . . . . . .	P Near	 0000	  Length= 0000 External STDCALL
+Gotoxy . . . . . . . . . . . . .	P Near	 0000	  Length= 0000 External STDCALL
+HIDECURSOR . . . . . . . . . . .	P Near	 0063	  _TEXT	Length= 000C Public STDCALL
+HIDEMOUSEPOINTER . . . . . . . .	P Near	 007B	  _TEXT	Length= 0008 Public STDCALL
+IsDigit  . . . . . . . . . . . .	P Near	 0000	  Length= 0000 External STDCALL
+LEFTBUTTONCLICK  . . . . . . . .	P Near	 008B	  _TEXT	Length= 003B Public STDCALL
+  LBC1 . . . . . . . . . . . . .	L Near	 00A1	  _TEXT	
+  LBC_EXIT . . . . . . . . . . .	L Near	 00C4	  _TEXT	
+MAIN . . . . . . . . . . . . . .	P Near	 0000	  _TEXT	Length= 005B Public STDCALL
+  L1 . . . . . . . . . . . . . .	L Near	 0035	  _TEXT	
+  L2 . . . . . . . . . . . . . .	L Near	 0049	  _TEXT	
+  QUIT . . . . . . . . . . . . .	L Near	 004B	  _TEXT	
+Random32 . . . . . . . . . . . .	P Near	 0000	  Length= 0000 External STDCALL
+RandomRange  . . . . . . . . . .	P Near	 0000	  Length= 0000 External STDCALL
+Randomize  . . . . . . . . . . .	P Near	 0000	  Length= 0000 External STDCALL
+ReadChar . . . . . . . . . . . .	P Near	 0000	  Length= 0000 External STDCALL
+ReadHex  . . . . . . . . . . . .	P Near	 0000	  Length= 0000 External STDCALL
+ReadInt  . . . . . . . . . . . .	P Near	 0000	  Length= 0000 External STDCALL
+ReadString . . . . . . . . . . .	P Near	 0000	  Length= 0000 External STDCALL
+SETMOUSEPOSITION . . . . . . . .	P Near	 00FB	  _TEXT	Length= 0006 Public STDCALL
+SHOWCURSOR . . . . . . . . . . .	P Near	 006F	  _TEXT	Length= 000C Public STDCALL
+SHOWMOUSEPOINTER . . . . . . . .	P Near	 0083	  _TEXT	Length= 0008 Public STDCALL
+SHOWMOUSEPOSITION  . . . . . . .	P Near	 00C6	  _TEXT	Length= 0035 Public STDCALL
+  SMP1 . . . . . . . . . . . . .	L Near	 00D6	  _TEXT	
+  SMP_EXIT . . . . . . . . . . .	L Near	 00F9	  _TEXT	
+Str_compare  . . . . . . . . . .	P Near	 0000	  Length= 0000 External STDCALL
+Str_copy . . . . . . . . . . . .	P Near	 0000	  Length= 0000 External STDCALL
+Str_length . . . . . . . . . . .	P Near	 0000	  Length= 0000 External STDCALL
+Str_trim . . . . . . . . . . . .	P Near	 0000	  Length= 0000 External STDCALL
+Str_ucase  . . . . . . . . . . .	P Near	 0000	  Length= 0000 External STDCALL
+WaitMsg  . . . . . . . . . . . .	P Near	 0000	  Length= 0000 External STDCALL
+WriteBin . . . . . . . . . . . .	P Near	 0000	  Length= 0000 External STDCALL
+WriteChar  . . . . . . . . . . .	P Near	 0000	  Length= 0000 External STDCALL
+WriteDec . . . . . . . . . . . .	P Near	 0000	  Length= 0000 External STDCALL
+WriteHex . . . . . . . . . . . .	P Near	 0000	  Length= 0000 External STDCALL
+WriteInt . . . . . . . . . . . .	P Near	 0000	  Length= 0000 External STDCALL
+WriteString  . . . . . . . . . .	P Near	 0000	  Length= 0000 External STDCALL
+
+
+Symbols:
+
+                N a m e                 Type     Value    Attr
+
+@CodeSize  . . . . . . . . . . .	Number	 0000h	 
+@DataSize  . . . . . . . . . . .	Number	 0000h	 
+@Interface . . . . . . . . . . .	Number	 0003h	 
+@Model . . . . . . . . . . . . .	Number	 0002h	 
+@cmdline . . . . . . . . . . . .	Text   	 OFFSET __98765765cmdline
+@code  . . . . . . . . . . . . .	Text   	 _TEXT
+@data  . . . . . . . . . . . . .	Text   	 DGROUP
+@fardata?  . . . . . . . . . . .	Text   	 FAR_BSS
+@fardata . . . . . . . . . . . .	Text   	 FAR_DATA
+@stack . . . . . . . . . . . . .	Text   	 DGROUP
+BLANKS . . . . . . . . . . . . .	Byte	 0033	  _DATA	
+ESCKEY . . . . . . . . . . . . .	Number	 001Bh	 
+GREETINGMSG  . . . . . . . . . .	Byte	 0000	  _DATA	
+STATUSLINE . . . . . . . . . . .	Byte	 0015	  _DATA	
+XCLICK . . . . . . . . . . . . .	Word	 003F	  _DATA	
+XCOORDINATE  . . . . . . . . . .	Word	 003B	  _DATA	
+YCLICK . . . . . . . . . . . . .	Word	 0041	  _DATA	
+YCOORDINATE  . . . . . . . . . .	Word	 003D	  _DATA	
+black  . . . . . . . . . . . . .	Number	 0000h	 
+blue . . . . . . . . . . . . . .	Number	 0001h	 
+brown  . . . . . . . . . . . . .	Number	 0006h	 
+cyan . . . . . . . . . . . . . .	Number	 0003h	 
+exit . . . . . . . . . . . . . .	Text   	 .EXIT
+gray . . . . . . . . . . . . . .	Number	 0008h	 
+green  . . . . . . . . . . . . .	Number	 0002h	 
+lightBlue  . . . . . . . . . . .	Number	 0009h	 
+lightCyan  . . . . . . . . . . .	Number	 000Bh	 
+lightGray  . . . . . . . . . . .	Number	 0007h	 
+lightGreen . . . . . . . . . . .	Number	 000Ah	 
+lightMagenta . . . . . . . . . .	Number	 000Dh	 
+lightRed . . . . . . . . . . . .	Number	 000Ch	 
+magenta  . . . . . . . . . . . .	Number	 0005h	 
+red  . . . . . . . . . . . . . .	Number	 0004h	 
+white  . . . . . . . . . . . . .	Number	 000Fh	 
+yellow . . . . . . . . . . . . .	Number	 000Eh	 
+
+	   0 Warnings
+	   0 Errors

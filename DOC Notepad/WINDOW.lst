@@ -1,0 +1,656 @@
+Microsoft (R) Macro Assembler Version 6.15.8803		    04/22/12 18:04:47
+window			(window.asm)			     Page 1 - 1
+
+
+				TITLE window			(window.asm)
+				;Brijesh Patel
+				;Date Created:04/17/2012
+				;Date Last Modified: 04/17/2012
+				.MODEL			SMALL
+				.STACK			100H
+ 0030				WINSCR			STRUCT
+ 0000  00							FOREGROUNDCOLOR		BYTE 0
+ 0001  00							BACKGROUNDCOLOR		BYTE 0
+ 0002  00							UPPERROW			BYTE 0
+ 0003  00							LEFTCOL				BYTE 0
+ 0004  00							LOWERROW			BYTE 0
+ 0005  00							RIGHTCOL			BYTE 0
+ 0006  0028 [							BANNER				BYTE 40 DUP (0)
+        00
+       ]
+ 002E  00							ADDRESS1			BYTE 0
+ 002F  00							ADDRESS2			BYTE 0
+				WINSCR			ENDS
+
+				EXIT			MACRO
+								MOV					AX, 4C00h
+								INT					21h
+								ENDM
+				DRAWLINEHORM	MACRO				A:REQ, B:REQ, NUM:REQ
+								MOV					DL, A
+								MOV					DH, B
+								MOV					AH, 2
+								INT					10h
+								MOV					CX, NUM
+								CALL				DRAWLINEHOR
+								ENDM
+								
+				DRAWLINEVERM	MACRO				A:REQ, B:REQ, NUM:REQ
+								MOV					DL, A
+								MOV					DH, B
+								MOV					AH, 2
+								INT					10h
+								MOV					CX, NUM
+								CALL				DRAWLINEVER
+								ENDM
+								
+				GETCURPOS		MACRO
+								MOV					AH, 3
+								MOV					BH, 0
+								INT					10h
+								ENDM
+								
+				DECCORSORDL		MACRO
+								DEC					DL
+								MOV					AH, 2
+								INT					10h
+								ENDM
+								
+				ADVENCECUR		MACRO
+								INC					DL
+								MOV					AH, 2
+								INT					10H
+								ENDM
+								
+				INCCORSORDH		MACRO
+								INC					DH
+								MOV					AH, 2
+								INT					10h
+								ENDM
+								
+				DECCORSORDH		MACRO
+								DEC					DH
+								MOV					AH, 2
+								INT					10h
+								ENDM
+								
+				SETCURPOS		MACRO				A:REQ, B:REQ
+								MOV					DL, A
+								MOV					DH, B
+								MOV					AH, 2
+								MOV					BH, 0
+								INT					10h
+								ENDM
+				; ENDCORNER		MACRO				bCHAR:REQ
+								; MOV					AX, bCHAR
+								; PUSH				AX
+								; GETCURPOS
+								; CMP					DX, 4716h
+								; JE					DONTMOVE
+								; JNE					KEEPGOING3
+								
+								; DONTMOVE:
+								; SETCURPOS			47h, 16h
+								; CALL				PUTCHAR
+								; JMP					FINISH3
+								
+								; KEEPGOING3:	
+								; CALL				PUTCHAR
+								; CURBOUNDRY
+								
+								; FINISH3:
+								; ENDM
+				CURBOUNDRY		MACRO
+								CMP					DL, 47h
+								JE					NEXTLINE
+								JNE					ALLDONE
+								NEXTLINE:
+								INC					DH
+								MOV					DL, 02h
+								ALLDONE:
+								
+								ADVENCECUR
+								ENDM
+				PUTCHARM		MACRO				aCHAR:REQ
+								MOV					AX, aCHAR
+								PUSH				AX
+								CALL				PUTCHAR
+								GETCURPOS
+								CURBOUNDRY
+								ADVENCECUR
+								ENDM
+							
+ 0000				.DATA
+ 0000 11 10 02 02 17 48		APPLICATION		WINSCR				<11h,10h,02h,02h,17h,48h," BRIJESH PATEL ">
+       20 42 52 49 4A 45
+       53 48 20 50 41 54
+       45 4C 20
+       0019 [
+        00
+       ] 00 00
+ 0000				.CODE
+ 0000				CLRSCR			PROC
+ 0000  55							PUSH				BP
+ 0001  8B EC							MOV					BP, SP
+ 0003  50							PUSH				AX
+ 0004  53							PUSH				BX
+ 0005  51							PUSH				CX
+ 0006  52							PUSH				DX
+								
+ 0007  B8 0600							MOV					AX, 0600h
+ 000A  B9 0000							MOV					CX, 0
+ 000D  BA 184F							MOV					DX, 184Fh
+ 0010  B7 07							MOV					BH, 7
+ 0012  CD 10							INT					10h
+ 0014  B4 02							MOV					AH, 2
+ 0016  B7 00							MOV					BH, 0
+ 0018  BA 0000							MOV					DX, 0
+ 001B  CD 10							INT					10h
+								
+ 001D  5A							POP					DX
+ 001E  59							POP					CX
+ 001F  5B							POP					BX
+ 0020  58							POP					AX
+ 0021  5D							POP					BP
+ 0022  C2 0002							RET					2
+ 0025				CLRSCR			ENDP
+ 0025				MAKEWIN			PROC
+ 0025  55							PUSH				BP
+ 0026  8B EC							MOV					BP, SP
+ 0028  50							PUSH				AX
+ 0029  53							PUSH				BX
+ 002A  51							PUSH				CX
+ 002B  52							PUSH				DX
+ 002C  56							PUSH				SI
+								
+ 002D  8B 76 04							MOV					SI, [BP+4]
+ 0030  B8 0600							MOV					AX, 0600h
+ 0033  8A 7C 01							MOV					BH, (WINSCR PTR[SI]).BACKGROUNDCOLOR
+ 0036  8A 6C 02							MOV					CH, (WINSCR PTR[SI]).UPPERROW
+ 0039  8A 4C 03							MOV					CL, (WINSCR PTR[SI]).LEFTCOL
+ 003C  8A 74 04							MOV					DH, (WINSCR PTR[SI]).LOWERROW
+ 003F  8A 54 05							MOV					DL, (WINSCR PTR[SI]).RIGHTCOL
+ 0042  CD 10							INT					10h
+ 0044  51							PUSH				CX
+ 0045  E8 0055							CALL				CURPOS
+								DRAWLINEHORM		02h, 02h, 47h				
+ 0048  B2 02		     1					MOV					DL, 02h
+ 004A  B6 02		     1					MOV					DH, 02h
+ 004C  B4 02		     1					MOV					AH, 2
+ 004E  CD 10		     1					INT					10h
+ 0050  B9 0047		     1					MOV					CX, 47h
+ 0053  E8 007F		     1					CALL				DRAWLINEHOR
+								DRAWLINEHORM		02h, 17h, 47h
+ 0056  B2 02		     1					MOV					DL, 02h
+ 0058  B6 17		     1					MOV					DH, 17h
+ 005A  B4 02		     1					MOV					AH, 2
+ 005C  CD 10		     1					INT					10h
+ 005E  B9 0047		     1					MOV					CX, 47h
+ 0061  E8 0071		     1					CALL				DRAWLINEHOR
+								DRAWLINEVERM		02h, 02h, 15h
+ 0064  B2 02		     1					MOV					DL, 02h
+ 0066  B6 02		     1					MOV					DH, 02h
+ 0068  B4 02		     1					MOV					AH, 2
+ 006A  CD 10		     1					INT					10h
+ 006C  B9 0015		     1					MOV					CX, 15h
+ 006F  E8 0043		     1					CALL				DRAWLINEVER
+								DRAWLINEVERM		48h, 02h, 15h
+ 0072  B2 48		     1					MOV					DL, 48h
+ 0074  B6 02		     1					MOV					DH, 02h
+ 0076  B4 02		     1					MOV					AH, 2
+ 0078  CD 10		     1					INT					10h
+ 007A  B9 0015		     1					MOV					CX, 15h
+ 007D  E8 0035		     1					CALL				DRAWLINEVER
+ 0080  E8 0065							CALL				BORDER
+								
+ 0083  83 C6 06							ADD                 SI,6
+ 0086  56							push				SI
+ 0087  E8 013A							call printbanner
+								
+								SETCURPOS			03h, 03h
+ 008A  B2 03		     1					MOV					DL, 03h
+ 008C  B6 03		     1					MOV					DH, 03h
+ 008E  B4 02		     1					MOV					AH, 2
+ 0090  B7 00		     1					MOV					BH, 0
+ 0092  CD 10		     1					INT					10h
+ 0094  5E							POP					SI
+ 0095  5A							POP					DX
+ 0096  59							POP					CX
+ 0097  5B							POP					BX
+ 0098  58							POP					AX
+ 0099  5D							POP					BP
+ 009A  C2 0002							RET					2
+ 009D				MAKEWIN			ENDP
+ 009D				CURPOS			PROC
+ 009D  55							PUSH				BP
+ 009E  8B EC							MOV					BP, SP
+ 00A0  50							PUSH				AX
+ 00A1  53							PUSH				BX
+ 00A2  51							PUSH				CX
+ 00A3  52							PUSH				DX
+								
+ 00A4  B4 02							MOV					AH, 02h
+ 00A6  B7 00							MOV					BH, 0
+ 00A8  8B 56 04							MOV					DX, [BP+4]
+ 00AB  CD 10							INT					10h
+								
+ 00AD  5A							POP					DX
+ 00AE  59							POP					CX
+ 00AF  5B							POP					BX
+ 00B0  58							POP					AX
+ 00B1  5D							POP					BP
+ 00B2  C2 0002							RET					2
+ 00B5				CURPOS			ENDP
+ 00B5				DRAWLINEVER		PROC
+ 00B5  55							PUSH				BP
+ 00B6  8B EC							MOV					BP, SP
+ 00B8  50							PUSH				AX
+ 00B9  52							PUSH				DX
+								
+ 00BA								VER:
+ 00BA  51							PUSH				CX
+ 00BB  B4 09							MOV					AH, 9
+ 00BD  B0 B3							MOV					AL, 0B3h
+ 00BF  B7 00							MOV					BH, 0
+ 00C1  B3 17							MOV					BL, 017h
+ 00C3  B9 0001							MOV					CX, 1
+ 00C6  CD 10							INT					10h
+								
+ 00C8  FE C6							INC					DH
+ 00CA  B4 02							MOV					AH, 2
+ 00CC  CD 10							INT					10h
+ 00CE  59							POP					CX
+ 00CF  E2 E9							LOOP 				VER
+								
+ 00D1  5A							POP					DX
+ 00D2  58							POP					AX
+ 00D3  5D							POP					BP
+ 00D4  C3							RET
+ 00D5				DRAWLINEVER		ENDP
+ 00D5				DRAWLINEHOR		PROC
+ 00D5  55							PUSH				BP
+ 00D6  8B EC							MOV					BP, SP
+ 00D8  50							PUSH				AX
+ 00D9  52							PUSH				DX
+								
+ 00DA  B4 09							MOV					AH, 9
+ 00DC  B0 C4							MOV					AL, 0C4h
+ 00DE  B7 00							MOV					BH, 0
+ 00E0  B3 17							MOV					BL, 017h
+ 00E2  CD 10							INT					10h
+								
+ 00E4  5A							POP					DX
+ 00E5  58							POP					AX
+ 00E6  5D							POP					BP
+ 00E7  C3							RET
+ 00E8				DRAWLINEHOR		ENDP
+ 00E8				BORDER			PROC
+ 00E8  55							PUSH				BP
+ 00E9  8B EC							MOV					BP, SP
+ 00EB  50							PUSH				AX
+ 00EC  53							PUSH				BX
+ 00ED  51							PUSH				CX
+ 00EE  52							PUSH				DX
+								
+								
+								SETCURPOS			02h, 02h
+ 00EF  B2 02		     1					MOV					DL, 02h
+ 00F1  B6 02		     1					MOV					DH, 02h
+ 00F3  B4 02		     1					MOV					AH, 2
+ 00F5  B7 00		     1					MOV					BH, 0
+ 00F7  CD 10		     1					INT					10h
+ 00F9  B4 09							MOV					AH, 09h
+ 00FB  B0 DA							MOV					AL, 0DAh
+ 00FD  B7 00							MOV					BH, 0
+ 00FF  B3 17							MOV					BL, 017H
+ 0101  B9 0001							MOV					CX, 1
+ 0104  CD 10							INT					10h
+								
+								SETCURPOS			02h,17h
+ 0106  B2 02		     1					MOV					DL, 02h
+ 0108  B6 17		     1					MOV					DH, 17h
+ 010A  B4 02		     1					MOV					AH, 2
+ 010C  B7 00		     1					MOV					BH, 0
+ 010E  CD 10		     1					INT					10h
+ 0110  B4 09							MOV					AH, 09h
+ 0112  B0 C0							MOV					AL, 0C0h
+ 0114  B7 00							MOV					BH, 0
+ 0116  B3 17							MOV					BL, 017H
+ 0118  B9 0001							MOV					CX, 1
+ 011B  CD 10							INT					10h
+								
+								SETCURPOS			48h,17h
+ 011D  B2 48		     1					MOV					DL, 48h
+ 011F  B6 17		     1					MOV					DH, 17h
+ 0121  B4 02		     1					MOV					AH, 2
+ 0123  B7 00		     1					MOV					BH, 0
+ 0125  CD 10		     1					INT					10h
+ 0127  B4 09							MOV					AH, 09h
+ 0129  B0 D9							MOV					AL, 0D9h
+ 012B  B7 00							MOV					BH, 0
+ 012D  B3 17							MOV					BL, 017H
+ 012F  B9 0001							MOV					CX, 1
+ 0132  CD 10							INT					10h
+								
+								SETCURPOS			48h,02h
+ 0134  B2 48		     1					MOV					DL, 48h
+ 0136  B6 02		     1					MOV					DH, 02h
+ 0138  B4 02		     1					MOV					AH, 2
+ 013A  B7 00		     1					MOV					BH, 0
+ 013C  CD 10		     1					INT					10h
+ 013E  B4 09							MOV					AH, 09h
+ 0140  B0 BF							MOV					AL, 0BFh
+ 0142  B7 00							MOV					BH, 0
+ 0144  B3 17							MOV					BL, 017H
+ 0146  B9 0001							MOV					CX, 1
+ 0149  CD 10							INT					10h
+								
+								SETCURPOS			47h,02h
+ 014B  B2 47		     1					MOV					DL, 47h
+ 014D  B6 02		     1					MOV					DH, 02h
+ 014F  B4 02		     1					MOV					AH, 2
+ 0151  B7 00		     1					MOV					BH, 0
+ 0153  CD 10		     1					INT					10h
+ 0155  B4 09							MOV					AH, 09h
+ 0157  B0 C3							MOV					AL, 0C3h
+ 0159  B7 00							MOV					BH, 0
+ 015B  B3 17							MOV					BL, 017H
+ 015D  B9 0001							MOV					CX, 1
+ 0160  CD 10							INT					10h
+								
+								SETCURPOS			46h,02h
+ 0162  B2 46		     1					MOV					DL, 46h
+ 0164  B6 02		     1					MOV					DH, 02h
+ 0166  B4 02		     1					MOV					AH, 2
+ 0168  B7 00		     1					MOV					BH, 0
+ 016A  CD 10		     1					INT					10h
+ 016C  B4 09							MOV					AH, 09h
+ 016E  B0 58							MOV					AL, 'X'
+ 0170  B7 00							MOV					BH, 0
+ 0172  B3 17							MOV					BL, 017H
+ 0174  B9 0001							MOV					CX, 1
+ 0177  CD 10							INT					10h
+								
+								SETCURPOS			45h,02h
+ 0179  B2 45		     1					MOV					DL, 45h
+ 017B  B6 02		     1					MOV					DH, 02h
+ 017D  B4 02		     1					MOV					AH, 2
+ 017F  B7 00		     1					MOV					BH, 0
+ 0181  CD 10		     1					INT					10h
+ 0183  B4 09							MOV					AH, 09h
+ 0185  B0 B4							MOV					AL, 0B4h
+ 0187  B7 00							MOV					BH, 0
+ 0189  B3 17							MOV					BL, 017H
+ 018B  B9 0001							MOV					CX, 1
+ 018E  CD 10							INT					10h
+								
+								SETCURPOS			03h,02h
+ 0190  B2 03		     1					MOV					DL, 03h
+ 0192  B6 02		     1					MOV					DH, 02h
+ 0194  B4 02		     1					MOV					AH, 2
+ 0196  B7 00		     1					MOV					BH, 0
+ 0198  CD 10		     1					INT					10h
+ 019A  B4 09							MOV					AH, 09h
+ 019C  B0 B4							MOV					AL, 0B4h
+ 019E  B7 00							MOV					BH, 0
+ 01A0  B3 17							MOV					BL, 017H
+ 01A2  B9 0001							MOV					CX, 1
+ 01A5  CD 10							INT					10h
+								
+								SETCURPOS			13h,02h
+ 01A7  B2 13		     1					MOV					DL, 13h
+ 01A9  B6 02		     1					MOV					DH, 02h
+ 01AB  B4 02		     1					MOV					AH, 2
+ 01AD  B7 00		     1					MOV					BH, 0
+ 01AF  CD 10		     1					INT					10h
+ 01B1  B4 09							MOV					AH, 09h
+ 01B3  B0 C3							MOV					AL, 0C3h
+ 01B5  B7 00							MOV					BH, 0
+ 01B7  B3 17							MOV					BL, 017H
+ 01B9  B9 0001							MOV					CX, 1
+ 01BC  CD 10							INT					10h
+								
+ 01BE  5A							POP					DX
+ 01BF  59							POP					CX
+ 01C0  5B							POP					BX
+ 01C1  58							POP					AX
+ 01C2  5D							POP					BP
+ 01C3  C3							RET					
+ 01C4				BORDER			ENDP
+ 01C4				PRINTBANNER		PROC
+ 01C4  55							PUSH				BP
+ 01C5  8B EC							MOV					BP, SP
+ 01C7  50							PUSH				AX
+ 01C8  53							PUSH				BX
+ 01C9  51							PUSH				CX
+ 01CA  52							PUSH				DX
+ 01CB  56							PUSH				SI
+								
+								SETCURPOS			04h,02h
+ 01CC  B2 04		     1					MOV					DL, 04h
+ 01CE  B6 02		     1					MOV					DH, 02h
+ 01D0  B4 02		     1					MOV					AH, 2
+ 01D2  B7 00		     1					MOV					BH, 0
+ 01D4  CD 10		     1					INT					10h
+								
+ 01D6  BE 0000							mov					si, 0
+ 01D9  8B 76 04							mov					si, [bp+4]
+ 01DC								TRYAGAIN:
+ 01DC  8A 04							mov					al, [si]
+ 01DE  3C 00							cmp					al, 0
+ 01E0  74 29							je					ALLWELL
+								PUTCHARM			AX
+ 01E2  8B C0		     1					MOV					AX, AX
+ 01E4  50		     1					PUSH				AX
+ 01E5  E8 002C		     1					CALL				PUTCHAR
+ 01E8  B4 03		     2					MOV					AH, 3
+ 01EA  B7 00		     2					MOV					BH, 0
+ 01EC  CD 10		     2					INT					10h
+ 01EE  80 FA 47		     2					CMP					DL, 47h
+ 01F1  74 02		     2					JE					NEXTLINE
+ 01F3  75 04		     2					JNE					ALLDONE
+ 01F5			     2					NEXTLINE:
+ 01F5  FE C6		     2					INC					DH
+ 01F7  B2 02		     2					MOV					DL, 02h
+ 01F9			     2					ALLDONE:
+ 01F9  FE C2		     3					INC					DL
+ 01FB  B4 02		     3					MOV					AH, 2
+ 01FD  CD 10		     3					INT					10H
+ 01FF  FE C2		     2					INC					DL
+ 0201  B4 02		     2					MOV					AH, 2
+ 0203  CD 10		     2					INT					10H
+ 0205  46							inc 				si
+ 0206  B8 0000							mov 				ax, 0
+ 0209  EB D1							jmp 				TRYAGAIN
+ 020B								ALLWELL:
+								
+ 020B  5E							POP					SI
+ 020C  5A							POP					DX
+ 020D  59							POP					CX
+ 020E  5B							POP					BX
+ 020F  58							POP					AX
+ 0210  5D							POP					BP
+ 0211  C2 0002							RET					2
+ 0214				PRINTBANNER		ENDP
+ 0214				PUTCHAR			PROC
+ 0214  55							PUSH				BP
+ 0215  8B EC							MOV					BP, SP
+ 0217  50							PUSH				AX
+ 0218  53							PUSH				BX
+ 0219  51							PUSH				CX
+ 021A  52							PUSH				DX
+
+ 021B  B4 09							MOV					AH, 09h
+ 021D  8A 46 04							MOV					AL, [BP+4]
+ 0220  B7 00							MOV					BH, 0
+ 0222  B3 17							MOV					BL, 017h
+ 0224  B9 0001							MOV					CX, 1
+ 0227  CD 10							INT					10h
+								
+ 0229  5A							POP					DX
+ 022A  59							POP					CX
+ 022B  5B							POP					BX
+ 022C  58							POP					AX
+ 022D  5D							POP					BP
+ 022E  C2 0002							RET					2
+ 0231				PUTCHAR			ENDP
+
+ 0231				EXCEPTIONKEY	PROC
+ 0231  55							PUSH				BP
+ 0232  8B EC							MOV					BP, SP
+ 0234  50							PUSH				AX
+ 0235  53							PUSH				BX
+ 0236  51							PUSH				CX
+ 0237  52							PUSH				DX
+								
+								;LEFT ARROW 4B
+								;RIGHT ARROW 4D
+								;UPARROW 48
+								;DOWNARROW 50
+
+ 0238  5A							POP					DX
+ 0239  59							POP					CX
+ 023A  5B							POP					BX
+ 023B  58							POP					AX
+ 023C  5D							POP					BP
+ 023D  C3							RET
+ 023E				EXCEPTIONKEY	ENDP
+ 023E				MAIN			PROC
+ 023E  E8 FDBF							CALL				CLRSCR
+ 0241  B8 ---- R						MOV					AX, @DATA
+ 0244  8E D8							MOV					DS, AX
+								
+ 0246  B8 0000 R						MOV					AX, OFFSET APPLICATION
+ 0249  50							PUSH				AX
+ 024A  E8 FDD8							CALL				MAKEWIN
+
+								
+ 024D								AGAIN:
+ 024D  B4 10							MOV					AH, 10h
+ 024F  CD 16							INT					16h
+ 0251  3C 18							CMP					AL, 18h
+ 0253  74 28							JE					FINISH
+								; PUSH				AX
+								; CALL				PUTCHAR
+								PUTCHARM			AX
+ 0255  8B C0		     1					MOV					AX, AX
+ 0257  50		     1					PUSH				AX
+ 0258  E8 FFB9		     1					CALL				PUTCHAR
+ 025B  B4 03		     2					MOV					AH, 3
+ 025D  B7 00		     2					MOV					BH, 0
+ 025F  CD 10		     2					INT					10h
+ 0261  80 FA 47		     2					CMP					DL, 47h
+ 0264  74 02		     2					JE					NEXTLINE
+ 0266  75 04		     2					JNE					ALLDONE
+ 0268			     2					NEXTLINE:
+ 0268  FE C6		     2					INC					DH
+ 026A  B2 02		     2					MOV					DL, 02h
+ 026C			     2					ALLDONE:
+ 026C  FE C2		     3					INC					DL
+ 026E  B4 02		     3					MOV					AH, 2
+ 0270  CD 10		     3					INT					10H
+ 0272  FE C2		     2					INC					DL
+ 0274  B4 02		     2					MOV					AH, 2
+ 0276  CD 10		     2					INT					10H
+								; ENDCORNER			AX
+ 0278  75 D3							JNE					AGAIN
+								
+ 027A  E8 FD83							CALL				CLRSCR
+ 027D								FINISH:
+								EXIT
+ 027D  B8 4C00		     1					MOV					AX, 4C00h
+ 0280  CD 21		     1					INT					21h
+ 0282				MAIN			ENDP
+								END					MAIN
+Microsoft (R) Macro Assembler Version 6.15.8803		    04/22/12 18:04:47
+window			(window.asm)			     Symbols 2 - 1
+
+
+
+
+Macros:
+
+                N a m e                 Type
+
+ADVENCECUR . . . . . . . . . . .	Proc
+CURBOUNDRY . . . . . . . . . . .	Proc
+DECCORSORDH  . . . . . . . . . .	Proc
+DECCORSORDL  . . . . . . . . . .	Proc
+DRAWLINEHORM . . . . . . . . . .	Proc
+DRAWLINEVERM . . . . . . . . . .	Proc
+EXIT . . . . . . . . . . . . . .	Proc
+GETCURPOS  . . . . . . . . . . .	Proc
+INCCORSORDH  . . . . . . . . . .	Proc
+PUTCHARM . . . . . . . . . . . .	Proc
+SETCURPOS  . . . . . . . . . . .	Proc
+
+
+Structures and Unions:
+
+                N a m e                  Size
+                                         Offset      Type
+
+WINSCR . . . . . . . . . . . . .	 0030
+  FOREGROUNDCOLOR  . . . . . . .	 0000	     Byte
+  BACKGROUNDCOLOR  . . . . . . .	 0001	     Byte
+  UPPERROW . . . . . . . . . . .	 0002	     Byte
+  LEFTCOL  . . . . . . . . . . .	 0003	     Byte
+  LOWERROW . . . . . . . . . . .	 0004	     Byte
+  RIGHTCOL . . . . . . . . . . .	 0005	     Byte
+  BANNER . . . . . . . . . . . .	 0006	     Byte
+  ADDRESS1 . . . . . . . . . . .	 002E	     Byte
+  ADDRESS2 . . . . . . . . . . .	 002F	     Byte
+
+
+Segments and Groups:
+
+                N a m e                 Size     Length   Align   Combine Class
+
+DGROUP . . . . . . . . . . . . .	GROUP
+_DATA  . . . . . . . . . . . . .	16 Bit	 0030	  Word	  Public  'DATA'	
+STACK  . . . . . . . . . . . . .	16 Bit	 0100	  Para	  Stack	  'STACK'	 
+_TEXT  . . . . . . . . . . . . .	16 Bit	 0282	  Word	  Public  'CODE'	
+
+
+Procedures,  parameters and locals:
+
+                N a m e                 Type     Value    Attr
+
+BORDER . . . . . . . . . . . . .	P Near	 00E8	  _TEXT	Length= 00DC Public
+CLRSCR . . . . . . . . . . . . .	P Near	 0000	  _TEXT	Length= 0025 Public
+CURPOS . . . . . . . . . . . . .	P Near	 009D	  _TEXT	Length= 0018 Public
+DRAWLINEHOR  . . . . . . . . . .	P Near	 00D5	  _TEXT	Length= 0013 Public
+DRAWLINEVER  . . . . . . . . . .	P Near	 00B5	  _TEXT	Length= 0020 Public
+  VER  . . . . . . . . . . . . .	L Near	 00BA	  _TEXT	
+EXCEPTIONKEY . . . . . . . . . .	P Near	 0231	  _TEXT	Length= 000D Public
+MAIN . . . . . . . . . . . . . .	P Near	 023E	  _TEXT	Length= 0044 Public
+  AGAIN  . . . . . . . . . . . .	L Near	 024D	  _TEXT	
+  NEXTLINE . . . . . . . . . . .	L Near	 0268	  _TEXT	
+  ALLDONE  . . . . . . . . . . .	L Near	 026C	  _TEXT	
+  FINISH . . . . . . . . . . . .	L Near	 027D	  _TEXT	
+MAKEWIN  . . . . . . . . . . . .	P Near	 0025	  _TEXT	Length= 0078 Public
+PRINTBANNER  . . . . . . . . . .	P Near	 01C4	  _TEXT	Length= 0050 Public
+  TRYAGAIN . . . . . . . . . . .	L Near	 01DC	  _TEXT	
+  NEXTLINE . . . . . . . . . . .	L Near	 01F5	  _TEXT	
+  ALLDONE  . . . . . . . . . . .	L Near	 01F9	  _TEXT	
+  ALLWELL  . . . . . . . . . . .	L Near	 020B	  _TEXT	
+PUTCHAR  . . . . . . . . . . . .	P Near	 0214	  _TEXT	Length= 001D Public
+
+
+Symbols:
+
+                N a m e                 Type     Value    Attr
+
+@CodeSize  . . . . . . . . . . .	Number	 0000h	 
+@DataSize  . . . . . . . . . . .	Number	 0000h	 
+@Interface . . . . . . . . . . .	Number	 0000h	 
+@Model . . . . . . . . . . . . .	Number	 0002h	 
+@code  . . . . . . . . . . . . .	Text   	 _TEXT
+@data  . . . . . . . . . . . . .	Text   	 DGROUP
+@fardata?  . . . . . . . . . . .	Text   	 FAR_BSS
+@fardata . . . . . . . . . . . .	Text   	 FAR_DATA
+@stack . . . . . . . . . . . . .	Text   	 DGROUP
+APPLICATION  . . . . . . . . . .	WINSCR	 0000	  _DATA	
+
+	   0 Warnings
+	   0 Errors
